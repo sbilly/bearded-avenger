@@ -4,9 +4,29 @@ from sqlalchemy.ext.declarative import declarative_base
 from cif.store import Store
 import logging
 import arrow
+from pprint import pprint
 
 DB_FILE = 'cif.db'
 Base = declarative_base()
+
+
+class Tag(Base):
+    __tablename__ = "tags"
+
+    id = Column(Integer, primary_key=True)
+    tag = Column(String)
+
+    observable_id = Column(Integer, ForeignKey('observables.id'))
+
+
+class Reference(Base):
+    __tablename__ = 'references'
+
+    id = Column(Integer, primary_key=True)
+    url = Column(String)
+    tlp = Column(String)
+
+    observable_id = Column(Integer, ForeignKey('observables.id'))
 
 
 class Observable(Base):
@@ -28,8 +48,20 @@ class Observable(Base):
     lasttime= Column(DateTime)
     confidence = Column(Float)
 
+    # tags = relationship(
+    #     Tag,
+    #     backref=backref('tags',
+    #                      uselist=True,
+    #                      cascade='delete,all'))
+    #
+    # reference = relationship(
+    #     Reference,
+    #     backref=backref('references',
+    #                      uselist=True,
+    #                      cascade='delete,all'))
+
     def __init__(self, observable=None, otype=None, tlp=None, provider=None, portlist=None, asn=None, asn_desc=None,
-                 cc=None, protocol=None, firsttime=arrow.utcnow().datetime, lasttime=arrow.utcnow().datetime, reporttime=arrow.utcnow().datetime, group="everyone", tags=[], confidence=None):
+                 cc=None, protocol=None, firsttime=arrow.utcnow().datetime, lasttime=arrow.utcnow().datetime, reporttime=arrow.utcnow().datetime, group="everyone", tags=[], confidence=None, reference=None):
 
         self.observable = observable
         self.group = group
@@ -46,20 +78,6 @@ class Observable(Base):
         self.lasttime = lasttime
         self.tags = tags
         self.confidence = confidence
-
-
-class Tag(Base):
-    __tablename__ = "tags"
-
-    id = Column(Integer, primary_key=True)
-    tag = Column(String)
-
-    observable_id = Column(Integer, ForeignKey('observables.id'))
-    observable = relationship(
-        Observable,
-        backref=backref('observables',
-                         uselist=True,
-                         cascade='delete,all'))
 
 
 # http://www.pythoncentral.io/sqlalchemy-orm-examples/
@@ -100,8 +118,12 @@ class SQLite(Store):
 
         for d in data:
             o = Observable(**d)
-
             s.add(o)
+
+            ref = d.get('reference')
+            if ref:
+                r = Reference(url=ref['url'], tlp=ref['tlp'])
+                s.add(r)
 
             tags = d.get("tags", [])
             if isinstance(tags, basestring):

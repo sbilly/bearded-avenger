@@ -28,8 +28,9 @@ def test_storage_sqlite():
     with Storage(store='sqlite', dbfile=dbfile) as s:
         logger.info('starting')
         x = s.handle_submission('1234', [
-            {'observable': 'example.com', 'tags': ['botnet']},
-            {'observable': 'example2.com', 'tags': ['malware']}
+            {'observable': 'example.com', 'tags': ['botnet'], 'reference': { 'url': 'https://test.com?id=1',
+                                                                             'tlp': 'white'}},
+            #'observable': 'example2.com', 'tags': ['malware']}
         ])
 
         assert x > 0
@@ -40,5 +41,5 @@ def test_storage_sqlite():
 
         pprint(x)
 
-    os.unlink(dbfile)
+    #os.unlink(dbfile)
 
